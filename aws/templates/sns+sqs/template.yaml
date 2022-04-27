@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  TopicName:
+    Type: String
+  SqsName:
+    Type: String
+
+Resources:
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${TopicName}
+
+  Queue1:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${SqsName}1
+
+  Queue2:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${SqsName}2
+
+  Queue1Sub:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Endpoint: !GetAtt Queue1.Arn
+      Protocol: sqs
+      RawMessageDelivery: 'true'
+      FilterPolicy:
+        type:
+          - sqs1
+
+  Queue2Sub:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Endpoint: !GetAtt Queue2.Arn
+      Protocol: sqs
+      RawMessageDelivery: 'true'
+      FilterPolicy:
+        type:
+          - sqs2
+
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: sns.amazonaws.com
+          Action:
+          - sqs:SendMessage
+          Resource: "*"
+          Condition:
+            ArnEquals:
+              aws:SourceArn: !Ref SNSTopic
+      Queues:
+      - !Ref Queue1
+      - !Ref Queue2
