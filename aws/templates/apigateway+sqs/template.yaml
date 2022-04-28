@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Parameters:
+  QueueName:
+    Type: String
+  APIGatewayName:
+    Type: String
+
+Resources:
+  APIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref APIGatewayName
+      Description: API Endpoint to receive JSON payloads and queue in SQS
+
+  APIGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: sqs:SendMessage
+                Effect: Allow
+                Resource: !GetAtt Queue.Arn
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource: '*'
+            Version: '2012-10-17'
+          PolicyName: apig-sqs-send-msg-policy
+      RoleName: apig-sqs-send-msg-role
+
+  Queue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: !Sub ${QueueName}-sqs
+      VisibilityTimeout: 3600
+
+  SQSPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: SQS:*
+            Effect: Allow
+            Principal: '*'
+            Resource: !GetAtt Queue.Arn
+            Sid: Sid1517269801413
+        Version: '2012-10-17'
+      Queues:
+        - !Ref Queue
+
+  APIGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Credentials: !GetAtt 'APIGatewayRole.Arn'
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseTemplates:
+              application/json: '{"code": 001, "message": "message posted with success!!" }'
+        PassthroughBehavior: NEVER
+        RequestParameters:
+          integration.request.header.Content-Type: '''application/x-www-form-urlencoded'''
+        RequestTemplates:
+          application/json: Action=SendMessage&MessageBody=$input.body
+        Type: AWS
+        Uri: !Join
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - :sqs:path/
+            - !Ref 'AWS::AccountId'
+            - /
+            - !GetAtt Queue.QueueName
+      RequestValidatorId: !Ref APIGatewayRequestValidator
+      RequestModels:
+        application/json: !Ref APIGatewayMethodRequestModel
+      MethodResponses:
+        - ResponseModels:
+            application/json: !Ref APIGatewayMethodEmptyModel
+          StatusCode: '200'
+      ResourceId: !Ref APIGatewayAsyncResource
+      RestApiId: !Ref APIGateway
+
+  APIGatewayMethodRequestModel:
+    Type: 'AWS::ApiGateway::Model'
+    Properties:
+      RestApiId: !Ref APIGateway
+      ContentType: application/json
+      Description: Schema for sqs integration example
+      Name: ApiGatewaySQSModel
+      Schema:
+        $schema: 'http://json-schema.org/draft-04/schema#'
+        title: ApiGatewaySQSModel
+        type: object
+        properties:
+          message: 
+            type: string
+          dedupid:
+            type: string
+        required:
+          - message
+          - dedupid
+
+  APIGatewayMethodEmptyModel:
+    Type: 'AWS::ApiGateway::Model'
+    Properties:
+      RestApiId: !Ref APIGateway
+      ContentType: application/json
+      Description: Schema for sqs integration example
+      Name: MethodEmptyModel
+      Schema:
+        $schema: 'http://json-schema.org/draft-04/schema#'
+        title: MethodEmptyModel
+        type: object
+    
+  APIGatewayRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      Name: RequestValidator
+      RestApiId: !Ref APIGateway
+      ValidateRequestBody: true
+
+  APIGatewayAsyncResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGateway
+      ParentId: !Ref APIGatewayV1Resource
+      PathPart: async
+
+  APIGatewayV1Resource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGateway
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: v1
+
+  APIGatewayStageDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: APIGatewayMethod
+    Properties:
+      RestApiId: !Ref APIGateway
+      StageName: poc
