@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "Poc-Cloudfront-S3-Deploy"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-r1jxkz8k6jf9"
+s3_prefix = "Poc-Cloudfront-S3-Deploy"
+region = "us-east-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Suffix=\".s3.us-east-2.amazonaws.com\""
+image_repositories = []
