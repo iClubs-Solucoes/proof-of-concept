@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+       "lib": [
+          "es5",
+          "es6",
+          "DOM"
+       ],
+       "target": "ES5",
+       "module": "CommonJS",
+       "moduleResolution": "node",
+       "outDir": "./build",
+       "emitDecoratorMetadata": true,
+       "experimentalDecorators": true,
+       "sourceMap": true,
+       "strict": false,
+       "skipLibCheck": true,
+       "forceConsistentCasingInFileNames": true,
+       "esModuleInterop": true,
+       "downlevelIteration": true,
+      //  "typeRoots": ["./app/src/@types"]
+    }
+ }

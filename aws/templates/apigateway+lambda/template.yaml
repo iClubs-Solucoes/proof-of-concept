@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Parameters:
+  Stage:
+    Type: String
+    Default: poc
+  APIGatewayName:
+    Type: String
+  LambdaName:
+    Type: String
+
+Resources:
+  APIGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Description: API Endpoint to receive JSON payloads and queue in SQS
+      Name: !Ref APIGatewayName
+      StageName: !Ref Stage
+      Cors: 
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+  
+  LogGroupLambda:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaName}"
+
+  Lambda:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Architectures: 
+        - arm64
+      FunctionName: !Ref LambdaName
+      CodeUri: ./build
+      Handler: build/methods.fn_handler
+      Runtime: nodejs12.x
+      Events:
+        TaskAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIGateway
+            Path: /
+            Method: GET
+
+  APIGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: apigateway-lambda-policy
+          PolicyDocument:
+            Statement:
+              - Action: lambda:InvokeFunction
+                Effect: Allow
+                Resource: !GetAtt 'Lambda.Arn'
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource: '*'
+            Version: '2012-10-17'
+      RoleName: apigateway-lambda-role
