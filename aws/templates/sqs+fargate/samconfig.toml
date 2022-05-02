@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "Poc-SQS-Fargate-Deploy"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-r1jxkz8k6jf9"
+s3_prefix = "Poc-SQS-Fargate-Deploy"
+region = "us-east-2"
+capabilities = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "ClusterName=\"PocFargateCluster\" LogGroupName=\"PocFargate\" SQSName=\"poc-fargate-queue-sqs\" TaskName=\"PocFargate\" ServiceName=\"PocFargate\" ECRRepositoryName=\"ecr-poc-fargate\" VPCSubnetA=\"subnet-d9ef0da4\" VPCSubnetB=\"subnet-c7d367ac\" VPCID=\"vpc-ca31bca1\""
+image_repositories = []

@@ -1,0 +1,23 @@
+{
+  "name": "fargatesqs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.94",
+    "@types/aws-sdk": "^2.7.0",
+    "@types/node": "^17.0.25",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "aws": "^0.0.3-2",
+    "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1117.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build-image": "yarn build && docker build -t fargatesqs .",
+    "cfn-deploy": "sam deploy --config-file samconfig.toml --capabilities CAPABILITY_NAMED_IAM",
+    "cfn-undeploy": "sam delete --config-file samconfig.toml"
+  }
+}
