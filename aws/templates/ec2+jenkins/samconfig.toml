@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "POC-Jenkin-EC2"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-r1jxkz8k6jf9"
+s3_prefix = "POC-Jenkin-EC2"
+region = "us-east-2"
+capabilities = "CAPABILITY_NAMED_IAM"
+image_repositories = []
+parameter_overrides = "VpcId=\"vpc-ca31bca1\" SubnetId=\"subnet-d9ef0da4\" AmiId=\"ami-0c6a6b0e75b2b6ce7\" InstanceType=\"t2.nano\" SgInitIp=\"201.92.69.94\" Region=\"us-east-2\""

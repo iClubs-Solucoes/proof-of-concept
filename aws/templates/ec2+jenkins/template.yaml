@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  VpcId:
+    Type: String
+  SubnetId:
+    Type: String
+  AmiId:
+    Type: String
+  InstanceType:
+    Type: String
+  SgInitIp:
+    Type: String
+  Region:
+    Type: String
+
+Resources:
+  JenkinsRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: JenkinsRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: PermissionToAssumeRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Sid: PermissionToAssume
+              Effect: Allow
+              Action: sts:AssumeRole
+              Resource: arn:aws:iam::*:*
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMFullAccess
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  HTTPSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: JenkingsSG
+      GroupDescription: Enable HTTP access via port 80
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+      - CidrIp: !Sub ${SgInitIp}/32
+        FromPort: 8080
+        IpProtocol: tcp
+        ToPort: 8080
+
+  JenkinsInstanceProfile: 
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      InstanceProfileName: JenkinsInstanceProfile
+      Path: "/"
+      Roles: 
+        - !Ref JenkinsRole
+  
+  JenkinsInstance: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      BlockDeviceMappings: 
+      - DeviceName: "/dev/sdm"
+        Ebs: 
+          VolumeType: "io1"
+          Iops: "200"
+          DeleteOnTermination: "true"
+          VolumeSize: "20"
+      - DeviceName: "/dev/sdk"
+        NoDevice: {}
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref HTTPSecurityGroup
+        SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref JenkinsInstanceProfile
+      UserData: !Base64 
+        'Fn::Sub': |
+          #!/bin/bash
+          sudo yum install -y https://s3.${Region}.amazonaws.com/amazon-ssm-${Region}/latest/linux_amd64/amazon-ssm-agent.rpm
+          sudo yum update –y
+          sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+          sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+          sudo yum upgrade
+          sudo amazon-linux-extras install java-openjdk11 -y
+          sudo yum install jenkins -y
+          sudo systemctl enable jenkins
