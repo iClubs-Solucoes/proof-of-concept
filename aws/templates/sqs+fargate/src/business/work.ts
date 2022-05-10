@@ -20,7 +20,6 @@ export default class Work {
   }
 
   async processor(message: AWS.SQS.Message): Promise<boolean> {
-    await this.validate(message.Body);
 
     const body = {
       message_id: message.MessageId,
@@ -30,6 +29,9 @@ export default class Work {
     }
 
     await this.repository.put(body)
+
+    await this.validate(message.Body);
+
 
     return true;
   }

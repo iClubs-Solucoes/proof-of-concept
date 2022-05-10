@@ -1,8 +1,9 @@
-const {env} = process
+const { env } = process
 
 export default {
   REGION: env.REGION,
-  SQSUrl: env.SQSUrl,
-  POC_TABLE: env.POC_TABLE,
-  SQS_MESSAGE_VISIBILITY_TIMEOUT: env.SQS_MESSAGE_VISIBILITY_TIMEOUT 
+  SQS_URL: env.SQS_URL,
+  POC_TABLE: env.POC_TABLE ? env.POC_TABLE : 'fargate',
+  SQS_MESSAGE_VISIBILITY_TIMEOUT: Number(env.SQS_MESSAGE_VISIBILITY_TIMEOUT),
+  SCALE_UP_COOL_DOWN: Number(env.SCALE_UP_COOL_DOWN)
 }

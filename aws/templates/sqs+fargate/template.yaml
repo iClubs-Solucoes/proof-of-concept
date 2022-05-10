@@ -1,5 +1,5 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
 
 Parameters:
   ClusterName:
@@ -20,6 +20,10 @@ Parameters:
     Type: String
   VPCID:
     Type: String
+  SqsMessageVisibilityTimeout:
+    Type: Number
+  ScaleUpCoolDown:
+    Type: Number
 
 Resources:
   Cluster:
@@ -47,14 +51,18 @@ Resources:
       ContainerDefinitions:
         - Name: !Ref TaskName
           Image: !GetAtt ECRRepository.RepositoryUri
-          EntryPoint: 
+          EntryPoint:
             - "/bin/sh"
             - "-c"
           Command:
-            - "node -e 'require(\"/src/methods.js\").fn_fargate()'"
+            - 'node -e ''require("/src/methods.js").fn_fargate()'''
           Environment:
-            - Name: SQSUrl
-              Value: !GetAtt SQSQueue.QueueUrl 
+            - Name: SQS_URL
+              Value: !GetAtt SQSQueue.QueueUrl
+            - Name: SQS_MESSAGE_VISIBILITY_TIMEOUT
+              Value: !Ref SqsMessageVisibilityTimeout
+            - Name: SCALE_UP_COOL_DOWN
+              Value: !Ref ScaleUpCoolDown
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -64,13 +72,13 @@ Resources:
 
   Service:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
       ServiceName: !Ref ServiceName
       Cluster: !Ref Cluster
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 0
       LaunchType: FARGATE
-      NetworkConfiguration: 
+      NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
@@ -90,32 +98,58 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
 
-  SQSQueue: 
+  SQSQueueDLQ:
     Type: AWS::SQS::Queue
-    Properties: 
-      QueueName: !Ref SQSName
-      VisibilityTimeout: 3600
+    Properties:
+      QueueName: !Sub "${SQSName}DLQ"
 
-  QueueDepthAlarm: 
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref SQSName
+      VisibilityTimeout: !Ref SqsMessageVisibilityTimeout
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SQSQueueDLQ.Arn
+        maxReceiveCount: 2
+
+  QueueDepthAlarm:
     Type: AWS::CloudWatch::Alarm
-    Properties: 
+    Properties:
       AlarmDescription: "Alarm if queue depth increases to more than 1 message"
-      Namespace: "AWS/SQS"
-      MetricName: "ApproximateNumberOfMessagesVisible"
-      Dimensions: 
-        - 
-          Name: "QueueName"
-          Value: 
-            Fn::GetAtt: 
-              - "SQSQueue"
-              - "QueueName"
-      Statistic: "Sum"
-      Period: "10"
+      Metrics:
+        - Id: sqsMessageVisibleAndInvisible
+          Expression: SUM([sqsMessageVisible,sqsMessageInvisible])
+          Label: SqsMessageVisibleAndInvisible
+          ReturnData: true
+        - Id: sqsMessageVisible
+          MetricStat:
+            Period: !Ref SqsMessageVisibilityTimeout
+            Stat: Sum
+            Unit: Count
+            Metric:
+              MetricName: ApproximateNumberOfMessagesVisible
+              Namespace: AWS/SQS
+              Dimensions:
+                - Name: QueueName
+                  Value: !GetAtt SQSQueue.QueueName
+          ReturnData: false
+        - Id: sqsMessageInvisible
+          MetricStat:
+            Period: !Ref SqsMessageVisibilityTimeout
+            Stat: Sum
+            Unit: Count
+            Metric:
+              MetricName: ApproximateNumberOfMessagesNotVisible
+              Namespace: AWS/SQS
+              Dimensions:
+                - Name: QueueName
+                  Value: !GetAtt SQSQueue.QueueName
+          ReturnData: false
       EvaluationPeriods: "1"
       Threshold: "0"
       ComparisonOperator: "GreaterThanThreshold"
       ActionsEnabled: TRUE
-      AlarmActions: 
+      AlarmActions:
         - !Ref ScaleUpPolicy
       OKActions:
         - !Ref ScaleDownPolicy
@@ -129,9 +163,9 @@ Resources:
           - Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: "sts:AssumeRole"
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+        - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -142,7 +176,7 @@ Resources:
           - Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: "sts:AssumeRole"
       Policies:
         - PolicyName: CooperDefaultLambdaPolicy
           PolicyDocument:
@@ -151,38 +185,19 @@ Resources:
               - Effect: "Allow"
                 Action:
                   - sqs:*
-                Resource: "*"
-
-  ServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: PocServiceRoleECS
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
-      Policies:
-        - PolicyName: CooperDefaultLambdaPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - sqs:*
+                  - dynamodb:*
                 Resource: "*"
 
   AutoScalingTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       MinCapacity: 0
-      MaxCapacity: 1
-      ResourceId: !Join ['/', [service, !Ref Cluster, !GetAtt Service.Name]]
+      MaxCapacity: 4
+      ResourceId: !Join ["/", [service, !Ref Cluster, !GetAtt Service.Name]]
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
       RoleARN: !GetAtt AutoScalingRole.Arn
-                
+
   AutoScalingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -192,19 +207,19 @@ Resources:
           - Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: "sts:AssumeRole"
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole'
+        - "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole"
 
   ScaleUpPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: !Sub '${Service}ScaleUpPolicy'
+      PolicyName: !Sub "${Service}ScaleUpPolicy"
       PolicyType: StepScaling
       ScalingTargetId: !Ref AutoScalingTarget
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
-        Cooldown: 60
+        Cooldown: !Ref ScaleUpCoolDown
         MetricAggregationType: Average
         StepAdjustments:
           - MetricIntervalLowerBound: 0
@@ -213,31 +228,30 @@ Resources:
   ScaleDownPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: !Sub '${Service}ScaleDownPolicy'
+      PolicyName: !Sub "${Service}ScaleDownPolicy"
       PolicyType: StepScaling
       ScalingTargetId: !Ref AutoScalingTarget
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
-        Cooldown: 60
+        Cooldown: !Ref SqsMessageVisibilityTimeout
         MetricAggregationType: Average
         StepAdjustments:
           - MetricIntervalUpperBound: 0
             ScalingAdjustment: -1
 
-  ECRRepository: 
+  ECRRepository:
     Type: AWS::ECR::Repository
-    Properties: 
+    Properties:
       RepositoryName: !Ref ECRRepositoryName
-      RepositoryPolicyText: 
+      RepositoryPolicyText:
         Version: "2012-10-17"
-        Statement: 
-          - 
-            Sid: AllowPushPull
+        Statement:
+          - Sid: AllowPushPull
             Effect: Allow
-            Principal: 
-              AWS: 
+            Principal:
+              AWS:
                 - "*"
-            Action: 
+            Action:
               - "ecr:GetDownloadUrlForLayer"
               - "ecr:BatchGetImage"
               - "ecr:BatchCheckLayerAvailability"

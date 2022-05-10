@@ -18,8 +18,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "build-image": "yarn build && docker build -t fargatesqs .",
+    "build-image": "docker build -t fargatesqs .",
     "cfn-deploy": "sam deploy --config-file samconfig.toml --capabilities CAPABILITY_NAMED_IAM",
-    "cfn-undeploy": "sam delete --config-file samconfig.toml"
+    "cfn-undeploy": "sam delete --config-file samconfig.toml",
+    "image-up": "bash docker_pipe.sh",
+    "create-sam": "node PIPES/createSam.js",
+    "stack-deploy": "yarn create-sam && yarn cfn-deploy",
+    "deploy": "yarn stack-deploy && yarn image-up"
   }
 }
