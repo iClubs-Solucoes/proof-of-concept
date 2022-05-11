@@ -82,8 +82,9 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
-            - !Ref VPCSubnetA
-            - !Ref VPCSubnetB
+            - Fn::ImportValue: dev-iclubs-pvt-subnet-one
+            - Fn::ImportValue: dev-iclubs-pvt-subnet-two
+            - Fn::ImportValue: dev-iclubs-pvt-subnet-three
           SecurityGroups:
             - !Ref InstanceSecurityGroup
 
