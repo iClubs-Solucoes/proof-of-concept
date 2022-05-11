@@ -18,7 +18,7 @@ Parameters:
     Type: String
   VPCSubnetB:
     Type: String
-  VPCID:
+  InstanceSecurityGroup:
     Type: String
   SqsMessageVisibilityTimeout:
     Type: Number
