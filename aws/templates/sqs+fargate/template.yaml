@@ -87,16 +87,16 @@ Resources:
           SecurityGroups:
             - !Ref InstanceSecurityGroup
 
-  InstanceSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      VpcId: !Ref VPCID
-      GroupDescription: "Security group for Fargate + SQS Poc"
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
+  # InstanceSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     VpcId: !Ref VPCID
+  #     GroupDescription: "Security group for Fargate + SQS Poc"
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 0.0.0.0/0
 
   SQSQueueDLQ:
     Type: AWS::SQS::Queue
