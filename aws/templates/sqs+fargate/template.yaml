@@ -232,12 +232,13 @@ Resources:
       PolicyType: StepScaling
       ScalingTargetId: !Ref AutoScalingTarget
       StepScalingPolicyConfiguration:
-        AdjustmentType: ChangeInCapacity
+        AdjustmentType: PercentChangeInCapacity
         Cooldown: !Ref SqsMessageVisibilityTimeout
         MetricAggregationType: Average
+        MinAdjustmentMagnitude: 1
         StepAdjustments:
           - MetricIntervalUpperBound: 0
-            ScalingAdjustment: -1
+            ScalingAdjustment: -50
 
   ECRRepository:
     Type: AWS::ECR::Repository

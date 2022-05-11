@@ -1,0 +1,21 @@
+version: "3"
+
+
+services:
+  test:
+    image: teste-fargate:latest
+    build:
+      context: ./
+    container_name: test
+    entrypoint: ["/bin/sh","-c"]
+    environment:
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
+      - REGION=
+      - SQSUrl=
+      - POC_TABLE=
+      - SQS_MESSAGE_VISIBILITY_TIMEOUT=60
+      - SCALE_UP_COOL_DOWN=120
+    command:
+    - |
+      node -e 'require("/src/methods.js").fn_fargate()'
