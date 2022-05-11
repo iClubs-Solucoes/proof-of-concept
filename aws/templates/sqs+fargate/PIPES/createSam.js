@@ -71,7 +71,7 @@ async function write(str, file) {
   await fs.writeFile(file, str, { encoding: 'utf8' });
 }
 
-const PATH = '/mnt/c/Users/rafae/Documents/iClubs/proof-of-concept/aws/templates/sqs+fargate';
+const PATH = '{PATH}';
 
 function dockerPipe() {
   const _REGION = `${sam.default.deploy.parameters.region}`;
