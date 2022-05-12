@@ -20,4 +20,13 @@ export default class DynamoDb {
     }
     return this.doc_client.put(put_item_params).promise()
   }
+
+  async scan(params: IDynamoDb.ScanItemInput): Promise<PromiseResult<AWS.DynamoDB.ScanOutput,AWS.AWSError>> {
+    const scan_item_params = {
+      ...params,
+      TableName: this.table_name
+    }
+
+    return this.doc_client.scan(scan_item_params).promise()
+  }
 }

@@ -16,3 +16,13 @@ export const fn_fargate = async () => {
 
     await receiver.continuosReceiveAndProcessing({ params, sleep_time })
 }
+
+
+export const scan = async () => { 
+    try { 
+        const work = new Work();
+        await work.checkDuplicate();
+    } catch (err) {
+        console.log(err.message)
+    }
+}

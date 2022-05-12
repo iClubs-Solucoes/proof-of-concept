@@ -1,7 +1,8 @@
 import PocRepository from '../repositories/poc'
 import * as AWS from 'aws-sdk';
 import { IWork } from '../interfaces/IWork';
-
+import {IPoc} from '../interfaces/IPoc'
+import JsonRepository from '../repositories/json'
 export default class Work {
   repository: PocRepository;
 
@@ -35,4 +36,28 @@ export default class Work {
 
     return true;
   }
+
+  async checkDuplicate(): Promise<void> {
+    const json = new JsonRepository();
+    const items = await this.repository.scan();
+
+    await json.writeDatabase(items);
+
+    const messageCounter: IPoc.MessageCounterTable = {};
+    
+    const duplicates: IPoc.MessageCounterTable = {};
+
+    for (const item of items) {
+      const {message_id} = item;
+      if (messageCounter[message_id]) {
+        messageCounter[message_id]++;
+        duplicates[message_id] = messageCounter[message_id];
+      } else {
+        messageCounter[message_id] = 1;
+      }
+    }
+    await json.writeMessageCounter(messageCounter);
+    await json.writeDuplicates(duplicates);
+  }
+
 }

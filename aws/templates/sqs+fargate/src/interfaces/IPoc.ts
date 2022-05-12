@@ -6,4 +6,9 @@ export declare namespace IPoc {
     body: string;
     timestamp: string;
   }
+
+  export interface MessageCounterTable {
+    [message_id: string]: number;
+  }
+
 }
