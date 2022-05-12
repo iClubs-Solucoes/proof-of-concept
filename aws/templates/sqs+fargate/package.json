@@ -10,14 +10,20 @@
     "typescript": "^4.6.4"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.182",
     "aws": "^0.0.3-2",
     "aws-lambda": "^1.0.7",
-    "aws-sdk": "^2.1117.0"
+    "aws-sdk": "^2.1117.0",
+    "lodash": "^4.17.21"
   },
   "scripts": {
     "build": "tsc",
-    "build-image": "yarn build && docker build -t fargatesqs .",
+    "build-image": "docker build -t fargatesqs .",
     "cfn-deploy": "sam deploy --config-file samconfig.toml --capabilities CAPABILITY_NAMED_IAM",
-    "cfn-undeploy": "sam delete --config-file samconfig.toml"
+    "cfn-undeploy": "sam delete --config-file samconfig.toml",
+    "image-up": "bash docker_pipe.sh",
+    "create-sam": "node PIPES/createSam.js",
+    "stack-deploy": "yarn create-sam && yarn cfn-deploy",
+    "deploy": "yarn stack-deploy && yarn image-up"
   }
 }
