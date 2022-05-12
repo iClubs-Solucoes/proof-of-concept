@@ -11,24 +11,15 @@ The architecture that we propose for this test follows:
 ![SQS + Fargate Architecture Used](./assets/sqs_fargate_architecture.jpg)
 
 ## Deploy Stack
+Docker and bash is required to run.
 
 For a easy deployment of this stack you must have installed the Sam AWS application and AWS CLI installed and configured.
 
 Its also needed to have the permissions to create, update and delete Cloudformation Stacks.
 
-With the Sam AWS installed run the following command: `sam deploy --config-file samconfig.toml --capabilities CAPABILITY_NAMED_IAM`
+Before deploying, add your parameters in the params.json file. It is also necessary to add the account id in the createSam.js file.
 
-If its your first time runing Sam you may want to use this command: `sam deploy -g --capabilities CAPABILITY_NAMED_IAM` for a more friendly approach.
-
-When the stack is fully created, or if it become stuck, run the following commands to build and push the docker image to the ECR repository created:
-
-Login command: `aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin {account_number}.dkr.ecr.us-east-2.amazonaws.com`
-
-Build image command: `docker build -t {ecr_name} .`
-
-Tag image command: `docker tag ecr-poc-fargate:latest {account_number}.dkr.ecr.us-east-2.amazonaws.com/ecr-poc-fargate:latest`
-
-Push image command: `docker push {account_number}.dkr.ecr.us-east-2.amazonaws.com/{ecr_name}:latest`
+With the Sam AWS installed run the following command: `yarn deploy`
 
 ## Outcome
 

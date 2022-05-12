@@ -15,9 +15,9 @@
           "TaskName": "PocFargate",
           "ServiceName": "PocFargate",
           "ECRRepositoryName": "ecr-poc-fargate",
-          "VPCSubnetA": "subnet-05fa48b60f8feefca",
-          "VPCSubnetB": "subnet-0647b391d165ac7d4",
-          "VPCID": "vpc-053aa79b027fefdee",
+          "VPCSubnetA": "",
+          "VPCSubnetB": "",
+          "VPCID": "",
           "SqsMessageVisibilityTimeout": 120,
           "ScaleUpCoolDown": 300
         },
