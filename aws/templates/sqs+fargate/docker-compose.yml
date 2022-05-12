@@ -13,7 +13,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=
       - REGION=
       - SQSUrl=
-      - POC_TABLE=
       - SQS_MESSAGE_VISIBILITY_TIMEOUT=60
       - SCALE_UP_COOL_DOWN=120
     command:
