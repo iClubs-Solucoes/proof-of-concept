@@ -1,0 +1,32 @@
+{
+  "name": "poc-ecs-http",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Fulvio Coelho <fulvio.coelho@iclubs.com.br>",
+  "license": "MIT",
+  "scripts": {
+    "dev-start": "ts-node-dev app/index.ts",
+    "dev-start:w": "nodemon --watch \"app/**\" --ext \"ts\" --exec \"yarn dev-start\"",
+    "build": "tsc",
+    "build-image": "docker build -t fargatesqs .",
+    "cfn-deploy": "sam deploy --config-file samconfig.toml --capabilities CAPABILITY_NAMED_IAM",
+    "cfn-undeploy": "sam delete --config-file samconfig.toml",
+    "image-up": "bash docker_pipe.sh",
+    "create-sam": "node PIPES/createSam.js",
+    "stack-deploy": "yarn create-sam && yarn cfn-deploy",
+    "deploy": "yarn stack-deploy && yarn image-up"
+  },
+  "dependencies": {
+    "@types/express": "^4.17.17",
+    "@types/node": "^18.13.0",
+    "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.20",
+    "ts-mocha": "^10.0.0",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "tslib": "^2.5.0",
+    "typescript": "^4.9.5"
+  }
+}

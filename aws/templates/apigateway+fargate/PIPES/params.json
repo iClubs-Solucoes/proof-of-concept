@@ -1,0 +1,31 @@
+{
+  "version": 0.1,
+  "default": {
+    "deploy": {
+      "parameters": {
+        "stack_name": "Poc-HTTP-Fargate-Deploy",
+        "s3_bucket": "sam-teste-bucket",
+        "s3_prefix": "",
+        "region": "us-east-2",
+        "capabilities": "CAPABILITY_NAMED_IAM",
+        "parameter_overrides": {
+          "Stage": "dev",
+          "Tenant": "poc",
+          "Region": "us-east-2",
+          "SubnetIds": "",
+          "HasVPC": false,
+          "VPCId": "",
+          "ScalingCooldown": 60,
+          "CPUUtilization": 65,
+          "MinPodsNumber": 1,
+          "MaxPodsNumber": 5
+        },
+        "tags": {
+          "Tenant": "poc",
+          "Name": "FargatePocWithSam"
+        },
+        "image_repositories": []
+      }
+    }
+  }
+}
