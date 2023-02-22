@@ -1,0 +1,16 @@
+{
+  "name": "poc-batching-fifo-sqs-messages",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1290.0",
+    "cuid": "^2.1.8",
+    "lodash": "^4.17.21"
+  }
+}
