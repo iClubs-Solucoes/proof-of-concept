@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Cognito configuration'
+
+Parameters:
+  CallbackUrl: 
+    Type: String
+  GoogleClientId:
+    Type: String
+    NoEcho: true
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+  Name:
+    Type: String
+
+
+Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolTags: 
+        Service: Cognito
+        Name: !Sub ${Name}_user_pool
+      MfaConfiguration: "OFF"
+      AliasAttributes:
+        - email
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: preferred_username
+          AttributeDataType: String
+          Required: true 
+          Mutable: true
+      Policies: 
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: false
+          RequireSymbols: true
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 7
+      UserPoolName: !Sub ${Name}_user_pool
+
+  GoogleIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties: 
+      ProviderDetails:
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: "profile email openid"
+      ProviderName: Google
+      ProviderType: Google
+      UserPoolId: !Ref CognitoUserPool
+      AttributeMapping:
+        email: "email"
+        family_name: "family_name"
+        given_name: "given_name"
+        username: sub
+        preferred_username: email
+
+  UserPoolClient:
+    DependsOn: GoogleIdentityProvider
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlowsUserPoolClient: true
+      ClientName: !Sub ${Name}_cognito_client
+      ExplicitAuthFlows: 
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      SupportedIdentityProviders: 
+        - COGNITO
+        - Google
+      UserPoolId: !Ref CognitoUserPool
+      AllowedOAuthFlows:
+        - code
+      CallbackURLs:
+        - !Ref CallbackUrl
+      AllowedOAuthScopes:
+        - aws.cognito.signin.user.admin
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub ${Name}-user-pool-domain
+      UserPoolId: !Ref CognitoUserPool
+
+
+
+
+
+Outputs:
+  CognitoUserPoolArn:
+    Description: Cognito UserPool Arn
+    Value: !GetAtt CognitoUserPool.Arn
+    Export:
+      Name: UserPoolArn
+  ClientId:
+    Description: Cognito UserPool Id
+    Value: !Ref UserPoolClient
+    Export:
+      Name: UserPoolClient
+  CognitoUserPoolId:
+    Description: Cognito UserPool Id
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: UserPoolId
